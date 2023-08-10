@@ -1,0 +1,443 @@
+---
+title: "Gambling Industry Statistics Overview"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(flexdashboard)
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(scales)
+library(plotly)
+library(shiny)
+library(billboarder)
+library(reshape2)
+library(corrplot)
+
+
+#Import and Clean Data
+
+# Read data from the specified worksheet into a data frame
+#file path
+file_path="C:/Users/Nacim/OneDrive/Documents/Bioinformatics job preparation/Data Analyst Exercise.xlsx"
+Gambling_df <- read_excel(file_path, sheet = "Gambling industry data")
+                          
+                               #Initial Checks#
+#check dimensions
+dim(Gambling_df)
+#check Structure of dataframe
+str(Gambling_df)
+# Check the top 10 rows of the dataframe
+head(Gambling_df, 10)
+# Check the bottom 10 rows of the dataframe
+tail(Gambling_df, 10)
+
+#View rows with any missing values
+Gambling_df %>% 
+filter(!complete.cases(.))
+
+# Check columns classes
+sapply(Gambling_df, class)
+                               #data cleaning#
+
+#Remove rows with all empty values 
+#Use the 7th row as new column names
+## Replace spaces in column names with underscores and convert column names to lowercase
+
+Gambling_df <- Gambling_df[!apply(is.na(Gambling_df) | Gambling_df == "", 1, all),]%>%
+  `colnames<-`(Gambling_df[7, ]) %>% 
+{colnames(.) <- gsub(" ", "_", tolower(colnames(.))); .}
+
+# Check the top rows of the dataframe
+head(Gambling_df)
+
+#Delete the first 4 rows by range
+Gambling_df = Gambling_df %>% slice(-1:-4)
+#check column names and change any that need changing 
+colnames(Gambling_df)
+Gambling_df <- Gambling_df %>%
+rename(`percentage_change` = "%_\r\nchange")
+
+#how many NA left?
+#View rows with any missing values
+Gambling_df %>% 
+filter(!complete.cases(.))
+
+#Change missing value to Zero as it is genuinely missing 
+Gambling_df <- Gambling_df %>% 
+  mutate(`percentage_change` = as.numeric(`percentage_change`),  # Convert column to numeric
+    `percentage_change` = replace_na(`percentage_change`, 0))
+
+
+#set all data as numeral values instead of character except reporting period column and round to 2 decimal place
+Gambling_df <- Gambling_df %>%
+  mutate_at(vars(-'reporting_period'), ~ round(as.numeric(.), 2))
+
+#check no duplicates in the reporting period column
+any_Duplicate = Gambling_df[duplicated(Gambling_df), ]
+print(any_Duplicate)
+
+## Convert the column to a proper date format#
+# Split the Reporting Period into start and end dates while keeping original column
+# covert new columns to date and add %d
+gambling_analysis <- Gambling_df %>%
+  separate(`reporting_period`, into = c("start_date", "end_date"), sep = " -", remove = FALSE) %>%
+  mutate(start_date = dmy(paste('01', start_date)),
+         end_date = dmy(paste('31', end_date))) 
+
+                                    #Finale Data check
+#Structure of dataframe
+str(gambling_analysis)
+
+#check for missing values
+na_count <- colSums(is.na(gambling_analysis)) 
+
+```
+
+General Overview 
+=========================================================
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Overall Gross Gambling Yield
+
+```{r}
+#create function for line graph
+create_ggplot <- function(data) {
+  ggplot(data, aes(x = start_date, y = overall_total)) +
+  geom_line(color = "#0099f9", size = 1) +
+  geom_point(color = "#0099f9", size = 3) +
+  scale_y_continuous(labels = function(x) paste0(x, "M")) +  # Add "M" to y-axis labels
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every year
+  labs(title = "Great Britain Gross Gambling Yield ",  
+       subtitle = "From 2008 to 2022",  
+       caption = "Source: Gambling Commission",  
+       x = "Reporting Start Date",  
+       y = "Total Gross Gambling Yield in GBP") +  
+  theme(
+    plot.title = element_text(color = "#0099f9", size = 20, face = "bold", hjust = 0.5),  # Customize plot title appearance
+    plot.subtitle = element_text(size = 10, face = "bold", hjust = 0.5),  # Customize subtitle appearance
+    plot.caption = element_text(face = "italic", hjust = 0),  # Customize caption appearance
+  )
+}
+
+gg = create_ggplot(gambling_analysis)
+# Convert ggplot object to plotly for interactivity
+ggplotly(gg)
+
+
+
+
+```
+
+### Yearly Growth Rate
+```{r}
+gg <- 
+  ggplot(gambling_analysis, aes(x = start_date, y = percentage_change)) +
+  geom_line(color = "#006400", size = 1) +
+  geom_point(color = "#006400", size = 3) +
+  scale_y_continuous(limits = c(-0.2, 0.2), breaks = seq(-0.2, 0.2, by = 0.05)) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every year
+  labs(title = "Percentage Change in Great Britain Gross Gambling Yield",  
+       subtitle = "From 2008 to 2022",  
+       caption = "Source: Gambling Commission",  
+       x = "Reporting Start Date",  
+       y = "Total Yeild % Change") +  
+  theme(
+    plot.title = element_text(color = "#006400", size = 15, face = "bold", hjust = 0.5),  # Customize plot title appearance
+    plot.subtitle = element_text(size = 10, face = "bold", hjust = 0.5),  # Customize subtitle appearance
+    plot.caption = element_text(face = "italic", hjust = 0),  # Customize caption appearance
+    panel.grid.minor = element_line(color = "white", linetype = "dotted")  # Add minor grid lines
+  )
+
+# Convert ggplot object to plotly for interactivity
+ggplotly(gg)
+
+
+```
+
+### Observastion
+Overall trend suggests growth in the industry as there is a increase in the overall gambling yield over the years with some fluctuations and minor dips.The dip in 2020 could have been due to the impact of COVID-19 with initial lockdowns.
+
+Also, looking at the 
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Remote vs Non Remote
+
+```{r}
+sectors_remote <- c(
+  "betting_(remote)",
+  "bingo_(remote)",
+  "casino_(remote)"
+)
+
+sectors_non_remote <- c(
+  "arcades_(non-remote)",
+  "betting_(non-remote)",
+  "bingo_(non-remote)",
+  "casino_(non-remote)"
+)
+
+# Filter relevant columns and calculate percentages for remote and non-remote sectors
+remote_non_remote_data <- gambling_analysis %>%
+  select(end_date, `total_excluding_national_lottery_&_lotteries`, sectors_remote, sectors_non_remote) %>%
+  mutate(
+    Remote_Total = `betting_(remote)` + `bingo_(remote)` + `casino_(remote)`,
+    Non_Remote_Total = `arcades_(non-remote)` + `betting_(non-remote)` + `bingo_(non-remote)` + `casino_(non-remote)`,
+    Remote_Percentage = (Remote_Total / `total_excluding_national_lottery_&_lotteries`) * 100,
+    Non_Remote_Percentage = (Non_Remote_Total / `total_excluding_national_lottery_&_lotteries`) * 100
+  )
+
+# Plot the Remote vs. Non-Remote Contributions over time
+ggplot(remote_non_remote_data, aes(x = end_date)) +
+  geom_line(aes(y = Remote_Percentage, color = "Remote"), size = 1) +
+  geom_line(aes(y = Non_Remote_Percentage, color = "Non-Remote"), size = 1) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 10)) +
+  scale_color_manual(values = c("Remote" = "#006400", "Non-Remote" = "red")) +
+  labs(title = "Remote vs. Non-Remote Gambling Contributions 
+       (Excluding Lotteries)",
+       y = "Percentage of Total Revenue (%)",
+       x = "Reporting Period") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",  # Move legend to the right side
+    plot.title = element_text(color = "#006400", size = 15, face = "bold", hjust = 0.5),  # Customize plot title appearance
+    axis.text.y = element_text(size = 10),  # Adjust font size of y-axis labels
+    axis.ticks.y = element_line(size = 0.5),  # Adjust tick size of y-axis
+    panel.grid.minor.y = element_blank(),  # Remove minor grid lines
+    panel.grid.major.y = element_line(color = "gray80", size = 0.5, linetype = "dashed"),  # Add dashed grid lines
+    panel.grid.major.x = element_line(color = "gray80", size = 0.5, linetype = "dashed"),  # Add dashed grid lines
+  ) 
+```
+
+### Chart C
+
+```{r}
+
+```
+
+Sector Analysis
+========================================================
+
+Column {.tabset}
+-----------------------------------------------------------------------
+### f
+```{r}
+# Calculate average Gross Gambling Yield by sector
+average_yield_by_sector <- gambling_analysis %>%
+  summarise(across(`arcades_(non-remote)`:`the_national_lottery_(remote_and_non-remote)`, ~mean(.x, na.rm = TRUE)))
+
+# Convert the data to a format suitable for plotting
+average_yield_melted <- melt(average_yield_by_sector) %>% 
+   rename(sector = variable, average_yield = value)
+
+ggplot(data = average_yield_melted, aes(x = sector, y = average_yield)) +
+  geom_bar(stat = "identity", position = "dodge", fill = "steelblue") +
+  labs(title = "Average Gross Gambling Yield by Sector",
+       x = "Sector", y = "Average Yield in Million",
+       subtitle = "Between 2008 to 2022",
+       caption = "Source: Gambling Commission") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+
+
+```
+
+### h
+```{r}
+#create function for line graph
+create_ggplot <- function(data) {
+  ggplot(data, aes(x = start_date, y = overall_total)) +
+  geom_line(color = "#0099f9", size = 1) +
+  geom_point(color = "#0099f9", size = 3) +
+  scale_y_continuous(labels = function(x) paste0(x, "M")) +  # Add "M" to y-axis labels
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every year
+  labs(title = "Great Britain Gross Gambling Yield ",  
+       subtitle = "From 2008 to 2022",  
+       caption = "Source: Gambling Commission",  
+       x = "Reporting Start Date",  
+       y = "Total Gross Gambling Yield in GBP") +  
+  theme(
+    plot.title = element_text(color = "#0099f9", size = 20, face = "bold", hjust = 0.5),  # Customize plot title appearance
+    plot.subtitle = element_text(size = 10, face = "bold", hjust = 0.5),  # Customize subtitle appearance
+    plot.caption = element_text(face = "italic", hjust = 0),  # Customize caption appearance
+  )
+}
+
+gg = create_ggplot(gambling_analysis)
+# Convert ggplot object to plotly for interactivity
+ggplotly(gg)
+```
+
+
+
+Column {.tabset}
+-----------------------------------------------------------------------
+### Sector Contributions to Gross Gambling Yeild over time 
+```{r}
+#Calculate sector contributions for each reporting period
+sector_contributions <- gambling_analysis %>% 
+  select(`start_date`, `overall_total`,`arcades_(non-remote)`:`the_national_lottery_(remote_and_non-remote)`) %>% #Select relevant columns for calculation
+  mutate_at(vars(`arcades_(non-remote)`:`the_national_lottery_(remote_and_non-remote)`), 
+            ~ . / overall_total * 100) %>% #Calculate the contribution percentage of each sector
+  gather(key = "Sector", value = "Contribution", -`start_date`) %>% # Convert data to long format using gather
+  
+  filter(Sector != "overall_total") %>% #Filter out rows where the Sector is "overall_total"
+  
+  arrange(start_date) #Arrange the data by start_date
+
+
+# Create a stacked area chart to visualize sector contributions over time
+ggplot(data = sector_contributions, aes(x = start_date, y = Contribution, fill = Sector)) +
+  geom_bar(position='stack', stat='identity') +
+  scale_y_continuous(limits = c(0, 105), breaks = seq(0, 105, by = 10)) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every
+  
+  labs(title = "Sector Contributions to Overall Gross Gambling Yield",
+       x = "Reporting Period", y = "Percentage Contribution (%)",
+       fill = "Sector") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.key.size = unit(0.2, "cm"))  # Adjust the size
+```
+
+### Apr 2008 - Mar 2009
+```{r}
+
+# list sectors
+sectors <- c(
+  "arcades_(non-remote)",
+  "betting_(non-remote)",
+  "bingo_(non-remote)",
+  "casino_(non-remote)",
+  "betting_(remote)",
+  "bingo_(remote)",
+  "casino_(remote)",
+  "lotteries_(remote_and_non-remote)",
+  "the_national_lottery_(remote_and_non-remote)"
+)
+
+generate_interactive_pie_chart <- function(data, selected_period, sectors_col, overall_total_col) {
+  # Filter data for the selected reporting period
+  single_period_data <- data %>%
+    filter(reporting_period == selected_period) %>%
+    select(all_of(sectors_col), all_of(overall_total_col))
+  
+  # Calculate percentages for each sector based on Overall_Total
+  sector_percentages <- single_period_data %>%
+    mutate(across(all_of(sectors_col), ~ (. / !!sym(overall_total_col)) * 100)) %>%
+    select(-all_of(overall_total_col))
+  
+  # Reshape data for plotting
+  sector_percentages_long <- sector_percentages %>%
+    pivot_longer(cols = all_of(sectors_col), names_to = "Sector", values_to = "Percentage")
+  
+  # Generate the interactive pie chart using billboarder and bb_piechart
+  billboarder() %>% 
+    bb_piechart(
+      data = sector_percentages_long,
+      x = "Sector",
+      cols = "Percentage",
+      expand = TRUE,
+      title = paste("Sector Contributions to Overall Total -", selected_period),
+    )
+}
+
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2008 - Mar 2009", sectors, "overall_total")
+
+```
+
+### Apr 2009 - Mar 2010
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2009 - Mar 2010", sectors, "overall_total")
+```
+
+### Apr 2010 - Mar 2011
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2010 - Mar 2011", sectors, "overall_total")
+```
+### Apr 2011 - Mar 2012
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2011 - Mar 2012", sectors, "overall_total")
+```
+
+### Apr 2012 - Mar 2013
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2012 - Mar 2013", sectors, "overall_total")
+```
+
+### Apr 2013 - Mar 2014
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2013 - Mar 2014", sectors, "overall_total")
+```
+
+### Apr 2014 - Mar 2015
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2014 - Mar 2015", sectors, "overall_total")
+
+```
+### Apr 2015 - Mar 2016
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2015 - Mar 2016", sectors, "overall_total")
+
+```
+
+### Apr 2016 - Mar 2017
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2016 - Mar 2017", sectors, "overall_total")
+  
+```
+
+### Apr 2017 - Mar 2018
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2017 - Mar 2018", sectors, "overall_total")
+```
+
+### Apr 2018 - Mar 2019
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2008 - Mar 2009", sectors, "overall_total")
+
+```
+
+### Apr 2019 - Mar 2020
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2019 - Mar 2020", sectors, "overall_total")
+```
+
+### Apr 2020 - Mar 2021
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2020 - Mar 2021", sectors, "overall_total")
+```
+
+### Apr 2021 - Mar 2022
+```{r}
+# Call the function with your specific data and columns
+generate_interactive_pie_chart(gambling_analysis, "Apr 2021 - Mar 2022", sectors, "overall_total")
+```
+
+
+
+
