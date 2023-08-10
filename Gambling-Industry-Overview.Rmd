@@ -6,8 +6,9 @@ output:
     vertical_layout: fill
 ---
 
+
 ```{r setup, include=FALSE}
-library(flexdashboard)
+
 library(flexdashboard)
 library(readxl)
 library(tidyverse)
@@ -26,7 +27,8 @@ library(corrplot)
 
 # Read data from the specified worksheet into a data frame
 #file path
-file_path="C:/Users/Nacim/OneDrive/Documents/Bioinformatics job preparation/Data Analyst Exercise.xlsx"
+file_path="C:/Users/Nacim/OneDrive/Documents/Bioinformatics job preparation/Gambling-Industry-Overview/Data Analyst Exercise.xlsx"
+#"C:\Users\Nacim\OneDrive\Documents\Bioinformatics job preparation\Gambling-Industry-Overview\Data Analyst Exercise.xlsx"
 Gambling_df <- read_excel(file_path, sheet = "Gambling industry data")
                           
                                #Initial Checks#
@@ -101,8 +103,12 @@ na_count <- colSums(is.na(gambling_analysis))
 
 ```
 
+<span style="font-size: small;"> Version 1.0 </span>
+
+
 General Overview 
 =========================================================
+
 
 Column {.tabset}
 -----------------------------------------------------------------------
@@ -132,8 +138,23 @@ create_ggplot <- function(data) {
 gg = create_ggplot(gambling_analysis)
 # Convert ggplot object to plotly for interactivity
 ggplotly(gg)
+```
 
+### Trend 
 
+```{r}
+############################### trend analysis  using linear regression to model the relationship between time and  the gross gambling yield)
+# Fit linear regression model
+model <- lm(overall_total ~ start_date, data = gambling_analysis)
+regression <- summary(model)
+
+# Create scatter plot with trend line
+ggplot(data = gambling_analysis, aes(x = start_date, y = overall_total)) +
+  geom_point(color = "#0099f9", size = 3) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Trend Analysis of Gross Gambling Yield",
+       x = "Reporting Start Date", y = "Total Gross Gambling Yield") +
+  theme_minimal()
 
 
 ```
@@ -161,15 +182,9 @@ gg <-
 # Convert ggplot object to plotly for interactivity
 ggplotly(gg)
 
-
 ```
 
-### Observastion
-Overall trend suggests growth in the industry as there is a increase in the overall gambling yield over the years with some fluctuations and minor dips.The dip in 2020 could have been due to the impact of COVID-19 with initial lockdowns.
-
-Also, looking at the 
-
-Column {data-width=400}
+Column {data-width=350}
 -----------------------------------------------------------------------
 
 ### Remote vs Non Remote
@@ -199,10 +214,10 @@ remote_non_remote_data <- gambling_analysis %>%
   )
 
 # Plot the Remote vs. Non-Remote Contributions over time
-ggplot(remote_non_remote_data, aes(x = end_date)) +
+gg <- ggplot(remote_non_remote_data, aes(x = end_date)) +
   geom_line(aes(y = Remote_Percentage, color = "Remote"), size = 1) +
   geom_line(aes(y = Non_Remote_Percentage, color = "Non-Remote"), size = 1) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every
+  scale_x_date(date_breaks = "2 year", date_labels = "%Y") +  # Set x-axis labels to display every 2 years
   scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 10)) +
   scale_color_manual(values = c("Remote" = "#006400", "Non-Remote" = "red")) +
   labs(title = "Remote vs. Non-Remote Gambling Contributions 
@@ -219,20 +234,37 @@ ggplot(remote_non_remote_data, aes(x = end_date)) +
     panel.grid.major.y = element_line(color = "gray80", size = 0.5, linetype = "dashed"),  # Add dashed grid lines
     panel.grid.major.x = element_line(color = "gray80", size = 0.5, linetype = "dashed"),  # Add dashed grid lines
   ) 
+
+
+# Convert ggplot object to plotly for interactivity
+gg_plotly <- ggplotly(gg) %>% 
+  layout(
+    title = list(text = "Percentage Change in Great Britain Gross Gambling Yield", font = list(size = 12)),
+     legend = list(
+      title = list(text = "Colour", font = list(size = 10)),  # Adjust legend title size
+      font = list(size = 8)# Adjust legend label size
+    )
+  )
+
+# Display the interactive plot
+gg_plotly
 ```
 
-### Chart C
+### Summary
 
-```{r}
+A statistically significant positive trend in the gross gambling yield over time suggests that the gambling industry is experiencing consistent growth. The year 2020 marked a period of significant change for the gambling industry, potentially influenced by the effects of COVID-19 and lockdown measures.
 
-```
+There has been a noticeable transition from in-person to remote interactions within the gambling industry. This shift could be attributed to technological advancements, shifts in customer behavior, and the increased accessibility accelerated by response to COVID-19 and lockdowns.
+
+These findings imply that there is a need to update remote licensing and online safety regulations. This is crucial to ensure the protection of individuals and the broader public, especially in light of the evolving landscape shaped by remote gambling trends and the potential risks associated with them.
+
 
 Sector Analysis
 ========================================================
 
 Column {.tabset}
 -----------------------------------------------------------------------
-### f
+### Average Gambling Yield  
 ```{r}
 # Calculate average Gross Gambling Yield by sector
 average_yield_by_sector <- gambling_analysis %>%
@@ -242,7 +274,7 @@ average_yield_by_sector <- gambling_analysis %>%
 average_yield_melted <- melt(average_yield_by_sector) %>% 
    rename(sector = variable, average_yield = value)
 
-ggplot(data = average_yield_melted, aes(x = sector, y = average_yield)) +
+gg <- ggplot(data = average_yield_melted, aes(x = sector, y = average_yield)) +
   geom_bar(stat = "identity", position = "dodge", fill = "steelblue") +
   labs(title = "Average Gross Gambling Yield by Sector",
        x = "Sector", y = "Average Yield in Million",
@@ -251,33 +283,64 @@ ggplot(data = average_yield_melted, aes(x = sector, y = average_yield)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
 
+# Convert ggplot object to plotly for interactivity
+ggplotly(gg) 
+  
+
+
 
 ```
 
-### h
+### Gross Gambling Yield Over Time 
 ```{r}
-#create function for line graph
-create_ggplot <- function(data) {
-  ggplot(data, aes(x = start_date, y = overall_total)) +
-  geom_line(color = "#0099f9", size = 1) +
-  geom_point(color = "#0099f9", size = 3) +
-  scale_y_continuous(labels = function(x) paste0(x, "M")) +  # Add "M" to y-axis labels
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every year
-  labs(title = "Great Britain Gross Gambling Yield ",  
-       subtitle = "From 2008 to 2022",  
-       caption = "Source: Gambling Commission",  
-       x = "Reporting Start Date",  
-       y = "Total Gross Gambling Yield in GBP") +  
-  theme(
-    plot.title = element_text(color = "#0099f9", size = 20, face = "bold", hjust = 0.5),  # Customize plot title appearance
-    plot.subtitle = element_text(size = 10, face = "bold", hjust = 0.5),  # Customize subtitle appearance
-    plot.caption = element_text(face = "italic", hjust = 0),  # Customize caption appearance
-  )
-}
+# Create a ggplot object
+gg <- ggplot(data = gambling_analysis, aes(x = start_date)) +
+  geom_line(aes(y = `arcades_(non-remote)`, color = "arcades")) +
+  geom_line(aes(y = `betting_(non-remote)`, color = "Betting (non-remote)")) +
+  geom_line(aes(y = `bingo_(non-remote)`, color = "Bingo (non-remote)")) +
+  geom_line(aes(y = `casino_(non-remote)`, color = "Casino (non-remote)")) +
+  geom_line(aes(y = `betting_(remote)`, color = "Betting (remote)")) +
+  geom_line(aes(y = `bingo_(remote)`, color = "Bingo (remote)")) +
+  geom_line(aes(y = `casino_(remote)`, color = "Casino (remote)")) +
+  geom_line(aes(y = `lotteries_(remote_and_non-remote)`, color = "Lotteries (remote and non-remote)")) +
+  geom_line(aes(y = `the_national_lottery_(remote_and_non-remote)`, color = "The National Lottery (remote and non-remote)")) +
+  scale_x_date(date_breaks = "2 year", date_labels = "%Y") +  # Set x-axis labels to display every
+  labs(title = "Gross Gambling Yield Over Time by Sector",
+       x = "Reporting Period",
+       y = "Gross Gambling Yield in Million GBP",
+       color = "Sector") +
+  theme_minimal() +
+  scale_color_manual(values = c("Arcades" = "blue",
+                                "Betting (non-remote)" = "green",
+                                "Bingo (non-remote)" = "red",
+                                "Casino (non-remote)" = "purple",
+                                "Betting (remote)" = "orange",
+                                "Bingo (remote)" = "pink",
+                                "Casino (remote)" = "brown",
+                                "Lotteries (remote and non-remote)" = "gray",
+                                "The National Lottery (remote and non-remote)" = "black"))
 
-gg = create_ggplot(gambling_analysis)
+
+
 # Convert ggplot object to plotly for interactivity
-ggplotly(gg)
+gg_plotly <- ggplotly(gg) %>% 
+  layout(
+     legend = list(
+      title = list(text = "Sector", font = list(size = 10)),  # Adjust legend title size
+      font = list(size = 8),# Adjust legend label size
+    x = 0.6,  # Set x position to center
+     y = -0.65,    # Set y position at the top
+      xanchor = "center",  # Anchor x position at the center
+      yanchor = "bottom",  # Anchor y position at the top
+    orientation = "h"  # Display legend entries horizontally
+    )
+  )
+
+# Display the interactive plot
+gg_plotly
+
+
+
 ```
 
 
@@ -299,7 +362,7 @@ sector_contributions <- gambling_analysis %>%
 
 
 # Create a stacked area chart to visualize sector contributions over time
-ggplot(data = sector_contributions, aes(x = start_date, y = Contribution, fill = Sector)) +
+gg <- ggplot(data = sector_contributions, aes(x = start_date, y = Contribution, fill = Sector)) +
   geom_bar(position='stack', stat='identity') +
   scale_y_continuous(limits = c(0, 105), breaks = seq(0, 105, by = 10)) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis labels to display every
@@ -309,6 +372,25 @@ ggplot(data = sector_contributions, aes(x = start_date, y = Contribution, fill =
        fill = "Sector") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.key.size = unit(0.2, "cm"))  # Adjust the size
+
+# Convert ggplot object to plotly for interactivity
+gg_plotly <- ggplotly(gg) %>% 
+  layout(
+    title = list(text = "Sector Contributions to Overall Gross Gambling Yield", font = list(size = 15)),
+     legend = list(
+      title = list(text = "Sector", font = list(size = 10)),  # Adjust legend title size
+      font = list(size = 8),# Adjust legend label size
+    x = 0.6,  # Set x position to center
+     y = -0.65,    # Set y position at the top
+      xanchor = "center",  # Anchor x position at the center
+      yanchor = "bottom",  # Anchor y position at the top
+    orientation = "h"  # Display legend entries horizontally
+    )
+  )
+
+# Display the interactive plot
+gg_plotly
+
 ```
 
 ### Apr 2008 - Mar 2009
@@ -350,7 +432,7 @@ generate_interactive_pie_chart <- function(data, selected_period, sectors_col, o
       cols = "Percentage",
       expand = TRUE,
       title = paste("Sector Contributions to Overall Total -", selected_period),
-    )
+  )
 }
 
 # Call the function with your specific data and columns
@@ -437,6 +519,8 @@ generate_interactive_pie_chart(gambling_analysis, "Apr 2020 - Mar 2021", sectors
 # Call the function with your specific data and columns
 generate_interactive_pie_chart(gambling_analysis, "Apr 2021 - Mar 2022", sectors, "overall_total")
 ```
+
+<span style="font-size: small;"> Source: Gambling Commission </span>
 
 
 
