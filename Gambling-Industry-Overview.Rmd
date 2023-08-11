@@ -101,6 +101,9 @@ str(gambling_analysis)
 #check for missing values
 na_count <- colSums(is.na(gambling_analysis)) 
 
+#create summary table
+g_summary = data.frame(summary(gambling_analysis))
+
 ```
 
 <span style="font-size: small;"> Version 1.0 </span>
