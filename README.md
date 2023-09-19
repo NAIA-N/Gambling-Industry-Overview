@@ -17,7 +17,7 @@ The dataset used for this analysis was obtained from the Gambling Commission, an
 1. Data Import and Cleaning: The raw data was imported from the Excel file and underwent cleaning procedures to remove duplicates, handle missing values, and format columns appropriately.
 2. Data Visualization: Various data visualization techniques were used to visualize the overall trend in gross gambling yield, sector contributions, yearly growth rates, and more.
 3. Linear Regression: A linear regression analysis was performed to quantify the overall trend in the gross gambling yield over time.
-4. Hypothesis Testing: Hypothesis testing was conducted to determine whether there was a significant decline in the gambling yield during the COVID-19 pandemic compared to previous years.
+
 
 ## Key Findings
 
